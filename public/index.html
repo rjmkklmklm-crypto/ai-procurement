@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Procurement SaaS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      background: #38bdf8;
+      cursor: pointer;
+    }
+
+    #dashboard { display: none; }
+  </style>
+</head>
+
+<body>
+
+<h1>🚀 AI Procurement Platform</h1>
+
+<!-- AUTH SECTION -->
+<div id="auth" class="card">
+  <h2>Login / Register</h2>
+
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="register()">Register</button>
+  <button onclick="login()">Login</button>
+
+  <p id="authMsg"></p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <div class="card">
+    <h2>Add Supplier</h2>
+    <input id="name" placeholder="Name">
+    <input id="price" placeholder="Price">
+    <input id="rating" placeholder="Rating">
+    <button onclick="addSupplier()">Add</button>
+  </div>
+
+  <div class="card">
+    <h2>Suppliers</h2>
+    <button onclick="loadSuppliers()">Refresh</button>
+    <table id="table"></table>
+  </div>
+
+  <div class="card">
+    <h2>AI Assistant</h2>
+    <input id="question" placeholder="Ask AI">
+    <button onclick="askAI()">Basic</button>
+    <button onclick="askAdvanced()">Advanced</button>
+  </div>
+
+  <div class="card">
+    <h2>Analytics</h2>
+    <button onclick="getRisk()">Risk</button>
+    <button onclick="getBenchmark()">Benchmark</button>
+    <button onclick="getForecast()">Forecast</button>
+    <button onclick="getSimulation()">Simulation</button>
+
+    <canvas id="priceChart"></canvas>
+    <canvas id="riskChart"></canvas>
+    <canvas id="benchmarkChart"></canvas>
+  </div>
+
+  <pre id="output"></pre>
+</div>
+
+<script>
+let token = localStorage.getItem("token");
+
+// 🔐 SHOW DASHBOARD IF LOGGED IN
+if (token) {
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+}
+
+// 🧾 REGISTER
+async function register() {
+  const res = await fetch("/register", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      email: document.getElementById("email").value,
+      password: document.getElementById("password").value
+    })
+  });
+
+  const text = await res.text();
+  document.getElementById("authMsg").innerText = text;
+}
+
+// 🔑 LOGIN
+async function login() {
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      email: document.getElementById("email").value,
+      password: document.getElementById("password").value
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.token) {
+    localStorage.setItem("token", data.token);
+    location.reload();
+  } else {
+    document.getElementById("authMsg").innerText = "Login failed";
+  }
+}
+
+// 🔒 AUTH HEADER
+function authHeader() {
+  return {
+    "Content-Type": "application/json",
+    "Authorization": localStorage.getItem("token")
+  };
+}
+
+// ALL FUNCTIONS BELOW USE TOKEN
+
+async function addSupplier() {
+  await fetch("/supplier", {
+    method: "POST",
+    headers: authHeader(),
+    body: JSON.stringify({
+      name: document.getElementById("name").value,
+      price: Number(document.getElementById("price").value),
+      rating: Number(document.getElementById("rating").value)
+    })
+  });
+  loadSuppliers();
+}
+
+async function loadSuppliers() {
+  const res = await fetch("/suppliers", {
+    headers: authHeader()
+  });
+
+  const data = await res.json();
+
+  let html = "<tr><th>Name</th><th>Price</th><th>Rating</th></tr>";
+  data.forEach(s => {
+    html += `<tr>
+      <td>${s.name}</td>
+      <td>${s.price}</td>
+      <td>${s.rating}</td>
+    </tr>`;
+  });
+
+  document.getElementById("table").innerHTML = html;
+}
+
+async function askAI() {
+  const res = await fetch("/ai", {
+    method: "POST",
+    headers: authHeader(),
+    body: JSON.stringify({
+      question: document.getElementById("question").value
+    })
+  });
+
+  const data = await res.json();
+  document.getElementById("output").innerText = data.answer;
+}
+
+async function askAdvanced() {
+  const res = await fetch("/ai-advanced", {
+    method: "POST",
+    headers: authHeader(),
+    body: JSON.stringify({
+      question: document.getElementById("question").value
+    })
+  });
+
+  const data = await res.json();
+  document.getElementById("output").innerText = data.result;
+}
+
+async function getRisk() {
+  const res = await fetch("/risk", { headers: authHeader() });
+  const data = await res.json();
+  document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+
+async function getBenchmark() {
+  const res = await fetch("/benchmark", { headers: authHeader() });
+  const data = await res.json();
+  document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+
+async function getForecast() {
+  const res = await fetch("/forecast", { headers: authHeader() });
+  const data = await res.json();
+  document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+
+async function getSimulation() {
+  const res = await fetch("/simulate", { headers: authHeader() });
+  const data = await res.json();
+  document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+</script>
+
+</body>
+</html>
